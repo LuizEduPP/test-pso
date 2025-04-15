@@ -1,7 +1,7 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: #f7f8fa;
+  background-color: #858585;
   color: #222;
 }
 
@@ -10,17 +10,19 @@ body {
 }
 
 table {
-  background-color: #ffffff;
+  background-color: #666464;
   border-radius: 6px;
   overflow: hidden;
 }
 
-table > thead > tr > th,
+table > thead ,
 .ant-table-thead > tr > th {
-  background-color: #e6f4ff;
+  background-color: #474747;
   font-weight: 600;
   color: #111;
 }
+
+
 
 .ant-btn,
 button {
@@ -39,13 +41,4 @@ h2,
 h3 {
   font-weight: 600;
   color: #1f1f1f;
-}
-
-.group-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid #d9d9d9;
 }

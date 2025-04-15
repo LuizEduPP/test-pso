@@ -12,20 +12,22 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Table, Button, Space, Dropdown, Menu, Checkbox, Collapse } from "antd";
+import { Table, Button, Space, Dropdown, Menu, Checkbox } from "antd";
 import { useState } from "react";
-import {
-  ArrowLeftOutlined,
-  ArrowRightOutlined,
-  DownOutlined,
-} from "@ant-design/icons";
+import { ArrowLeftOutlined, ArrowRightOutlined, DownOutlined } from "@ant-design/icons";
 import LinhaForm from "./LinhaForm";
 import LinhaTarefa from "./LinhaTarefa";
 import dados from "./dadosAtividades.json";
+import dynamic from "next/dynamic";
+
+const DragProvider = dynamic(() => import("../context/DragProvider"), { ssr: false });
 
 const DraggableRow = (props) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: props["data-row-key"] });
+    useSortable({
+      id: props["data-row-key"],
+      disabled: false,
+    });
 
   const style = {
     ...props.style,
@@ -34,22 +36,32 @@ const DraggableRow = (props) => {
     cursor: "move",
   };
 
+  // Desativar drag se o clique for em um botão/input
+  const preventDragOnInteractive = (e) => {
+    const tag = e.target.tagName.toLowerCase();
+    if (["input", "button", "textarea", "select", "svg", "path"].includes(tag)) {
+      e.stopPropagation();
+    }
+  };
+
   return (
     <tr
       {...props}
       ref={setNodeRef}
       style={style}
+      onPointerDownCapture={preventDragOnInteractive}
       {...attributes}
       {...listeners}
     />
   );
 };
 
+
 export default function TabelaAtividades() {
   const [data, setData] = useState(dados);
-  const [agruparPor, setAgruparPor] = useState("projeto");
   const [collapsed, setCollapsed] = useState({});
   const [selecionados, setSelecionados] = useState({});
+  const [agruparPor, setAgruparPor] = useState("projeto");
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
@@ -57,21 +69,55 @@ export default function TabelaAtividades() {
     record: null,
   });
 
-  const atualizar = (novoItem) => {
-    const novaLista = data.map((item) => {
-      if (item.key === novoItem.key) return novoItem;
-      if (item.children) {
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+  
+    const mover = active.id;
+    const destino = over.id;
+  
+    const itemMover =
+      data.find((item) => item.key === mover) ||
+      data.flatMap((i) => i.children || []).find((i) => i.key === mover);
+  
+    const itemDestino =
+      data.find((item) => item.key === destino) ||
+      data.flatMap((i) => i.children || []).find((i) => i.key === destino);
+  
+    if (!itemMover || !itemDestino) return;
+  
+    // Atualizar projeto do itemMover
+    if (itemMover.projeto !== itemDestino.projeto) {
+      itemMover.projeto = itemDestino.projeto;
+    }
+  
+    // Remover item da posição antiga
+    const novoData = data.map((tarefa) => {
+      if (tarefa.key === mover) return null;
+      if (tarefa.children) {
         return {
-          ...item,
-          children: item.children.map((sub) =>
-            sub.key === novoItem.key ? novoItem : sub
-          ),
+          ...tarefa,
+          children: tarefa.children.filter((c) => c.key !== mover),
         };
       }
-      return item;
-    });
-    setData(novaLista);
+      return tarefa;
+    }).filter(Boolean);
+  
+    // Inserir item na nova posição do grupo de destino
+    const destinoIndex = novoData.findIndex((t) => t.key === itemDestino.key);
+    const inserido = !!novoData[destinoIndex];
+  
+    if (inserido) {
+      novoData.splice(destinoIndex + 1, 0, itemMover);
+    } else {
+      novoData.push(itemMover);
+    }
+  
+    setData(novoData);
   };
+  
 
   const agrupar = (lista) => {
     const grupos = {};
@@ -83,18 +129,18 @@ export default function TabelaAtividades() {
     return Object.entries(grupos).map(([nome, tarefas]) => ({ nome, tarefas }));
   };
 
-  const toggleSelecionarGrupo = (grupoNome, tarefas) => {
+  const toggleSelecionarGrupo = (nome, tarefas) => {
     const todosSelecionados = tarefas.every((t) => selecionados[t.key]);
     const novos = { ...selecionados };
     tarefas.forEach((t) => {
       novos[t.key] = !todosSelecionados;
-      t.children?.forEach((sub) => (novos[sub.key] = !todosSelecionados));
+      t.children?.forEach((c) => (novos[c.key] = !todosSelecionados));
     });
     setSelecionados(novos);
   };
 
-  const toggleCollapse = (grupoNome) => {
-    setCollapsed({ ...collapsed, [grupoNome]: !collapsed[grupoNome] });
+  const toggleCollapse = (nome) => {
+    setCollapsed({ ...collapsed, [nome]: !collapsed[nome] });
   };
 
   const handleContextMenu = (e, record) => {
@@ -122,10 +168,13 @@ export default function TabelaAtividades() {
       dataIndex: "selecionado",
       width: 50,
       render: (_, record) => (
-        <Checkbox
-          checked={selecionados[record.key]}
+        <Checkbox className=""
+        checked={!!record?.key && selecionados[record.key]}
           onChange={(e) =>
-            setSelecionados({ ...selecionados, [record.key]: e.target.checked })
+            setSelecionados({
+              ...selecionados,
+              [record.key]: e.target.checked,
+            })
           }
         />
       ),
@@ -135,33 +184,31 @@ export default function TabelaAtividades() {
       title: "Nome",
       dataIndex: "name",
       render: (_, record) => (
-        <LinhaTarefa record={record} campo="name" onUpdate={atualizar} />
+        <LinhaTarefa record={record} campo="name" onUpdate={setData} />
       ),
     },
     {
       title: "Duração",
       dataIndex: "duration",
       render: (_, record) => (
-        <LinhaTarefa record={record} campo="duration" onUpdate={atualizar} />
+        <LinhaTarefa record={record} campo="duration" onUpdate={setData} />
       ),
     },
     {
       title: "Início",
       dataIndex: "start",
       render: (_, record) => (
-        <LinhaTarefa record={record} campo="start" onUpdate={atualizar} />
+        <LinhaTarefa record={record} campo="start" onUpdate={setData} />
       ),
     },
     {
       title: "Fim",
       dataIndex: "end",
       render: (_, record) => (
-        <LinhaTarefa record={record} campo="end" onUpdate={atualizar} />
+        <LinhaTarefa record={record} campo="end" onUpdate={setData} />
       ),
     },
   ];
-
-  const sensors = useSensors(useSensor(PointerSensor));
 
   return (
     <div onClick={() => setContextMenu({ ...contextMenu, visible: false })}>
@@ -181,20 +228,19 @@ export default function TabelaAtividades() {
         </Button>
       </div>
 
+      <DragProvider onDragEnd={handleDragEnd}>
       {agrupar(data).map(({ nome, tarefas }) => {
-        const grupoTarefas = collapsed[nome] ? [] : tarefas;
+        const grupoTarefas = collapsed[nome]
+          ? []
+          : tarefas.map((t) => ({
+              ...t,
+              children: t.children?.filter(() => !collapsed[nome]),
+            }));
+
         return (
           <div key={nome} style={{ marginBottom: 48 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <h3>
-                {agruparPor.toUpperCase()}: {nome}
-              </h3>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <h3>{agruparPor.toUpperCase()}: {nome}</h3>
               <Space>
                 <Checkbox
                   checked={tarefas.every((t) => selecionados[t.key])}
@@ -210,34 +256,26 @@ export default function TabelaAtividades() {
               </Space>
             </div>
 
-            <DndContext sensors={sensors} collisionDetection={closestCenter}>
-              <SortableContext
-                items={grupoTarefas.map((t) => t.key)}
-                strategy={verticalListSortingStrategy}
-              >
-                <Table
-                  columns={colunas}
-                  dataSource={grupoTarefas}
-                  pagination={false}
-                  expandable={{ defaultExpandAllRows: true }}
-                  rowKey="key"
-                  bordered
-                  onRow={(record) => ({
-                    onContextMenu: (e) => handleContextMenu(e, record),
-                  })}
-                  rowClassName={(record) =>
-                    record.name === "Apontamento Semanal"
-                      ? "linha-destaque"
-                      : ""
-                  }
-                  components={{
-                    body: {
-                      row: DraggableRow,
-                    },
-                  }}
-                />
-              </SortableContext>
-            </DndContext>
+            <SortableContext
+              items={grupoTarefas.map((t) => t.key)}
+              strategy={verticalListSortingStrategy}
+            >
+              <Table
+                columns={colunas}
+                dataSource={grupoTarefas}
+                pagination={false}
+                rowKey="key"
+                bordered
+                onRow={(record) => ({
+                  onContextMenu: (e) => handleContextMenu(e, record),
+                })}
+                components={{
+                  body: {
+                    row: DraggableRow,
+                  },
+                }}
+              />
+            </SortableContext>
           </div>
         );
       })}
@@ -261,58 +299,8 @@ export default function TabelaAtividades() {
           />
         </div>
       )}
+      </DragProvider>
     </div>
   );
 }
 
-const handleDragEnd = (event) => {
-  const { active, over } = event;
-  if (!over || active.id === over.id) return;
-
-  const mover = active.id;
-  const destino = over.id;
-
-  const itemMover =
-    data.find((item) => item.key === mover) ||
-    data.flatMap((i) => i.children || []).find((i) => i.key === mover);
-
-  const novoData = [...data];
-
-  // Excluir da posição atual
-  for (const grupo of novoData) {
-    if (grupo.key === mover) {
-      const index = novoData.findIndex((g) => g.key === mover);
-      novoData.splice(index, 1);
-      break;
-    }
-    if (grupo.children) {
-      const idx = grupo.children.findIndex((c) => c.key === mover);
-      if (idx > -1) {
-        grupo.children.splice(idx, 1);
-        break;
-      }
-    }
-  }
-
-  // Inserir em novo local
-  let inserido = false;
-  for (const grupo of novoData) {
-    if (grupo.key === destino) {
-      if (!grupo.children) grupo.children = [];
-      grupo.children.push(itemMover);
-      inserido = true;
-      break;
-    }
-    if (grupo.children?.some((c) => c.key === destino)) {
-      const pai = grupo.children.find((c) => c.key === destino);
-      if (!pai.children) pai.children = [];
-      pai.children.push(itemMover);
-      inserido = true;
-      break;
-    }
-  }
-
-  if (!inserido) novoData.push(itemMover);
-
-  setData(novoData);
-};

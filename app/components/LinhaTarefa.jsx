@@ -43,31 +43,23 @@ export default function LinhaTarefa({ record, campo, onUpdate }) {
     );
   }
 
-  const tipoIcone = {
-    validacao: "mdi:check-decagram",
-    reuniao: "mdi:account-group",
-    desenvolvimento: "mdi:code-tags",
-    aprovacao: "mdi:clipboard-check",
-    outro: "mdi:clipboard-text",
-  };
-
-  const icone = tipoIcone[record.tipo] || tipoIcone.outro;
-
   const estilo = {
     display: "flex",
     alignItems: "center",
-    gap: 6,
     paddingLeft: isSubtarefa ? 24 : 0,
     fontWeight: isSubtarefa ? "normal" : "bold",
-    color: isSubtarefa ? "#444" : "#000",
+    color: isSubtarefa ? "#ff6600" : "#000",
     cursor: "pointer",
-  };
+   };
 
   return (
-    <div style={estilo} onClick={() => setEditando(true)}>
+    <div
+      style={estilo}
+      onClick={() => setEditando(true)}
+     >
       {campo === "name" && (
         <Icon
-          icon={isSubtarefa ? "mdi:subdirectory-arrow-right" : "mdi:folder"}
+          icon={isSubtarefa ? "mdi:file" : "mdi:folder"}
         />
       )}
       {valor}

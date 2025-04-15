@@ -1,5 +1,6 @@
 import "antd/dist/reset.css";
 import "./globals.css";
+import AntdProvider from "./context/AntdProvider";
 
 export const metadata = {
   title: "Painel de Atividades",
@@ -9,7 +10,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <AntdProvider>
+          {children}
+        </AntdProvider>
+      </body>
     </html>
   );
 }
