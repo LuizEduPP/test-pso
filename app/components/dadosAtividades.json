@@ -1,0 +1,86 @@
+[
+  {
+    "key": "1",
+    "id": 1,
+    "name": "Validação de despesas",
+    "duration": "8,00",
+    "start": "23/07/2024",
+    "end": "23/07/2024",
+    "projeto": "Financeiro",
+    "status": "feito"
+  },
+  {
+    "key": "2",
+    "id": 2,
+    "name": "Projeto 01",
+    "duration": "12,00",
+    "start": "23/07/2024",
+    "end": "24/07/2024",
+    "projeto": "Desenvolvimento",
+    "status": "em andamento",
+    "children": [
+      {
+        "key": "2-1",
+        "id": "2.1",
+        "name": "Apontamento Rejeitado",
+        "duration": "32,00",
+        "start": "24/07/2024",
+        "end": "29/07/2024",
+        "projeto": "Desenvolvimento",
+        "status": "pendente"
+      },
+      {
+        "key": "2-2",
+        "id": "2.2",
+        "name": "Aprovação de horas - 1BY1",
+        "duration": "18,00",
+        "start": "31/07/2024",
+        "end": "02/08/2024",
+        "projeto": "Desenvolvimento",
+        "status": "feito"
+      }
+    ]
+  },
+  {
+    "key": "3",
+    "id": 3,
+    "name": "Apontamento Semanal",
+    "duration": "18,00",
+    "start": "02/08/2024",
+    "end": "02/08/2024",
+    "projeto": "Financeiro",
+    "status": "pendente"
+  },
+  {
+    "key": "4",
+    "id": 4,
+    "name": "Criação de layout UI",
+    "duration": "10,00",
+    "start": "05/08/2024",
+    "end": "06/08/2024",
+    "projeto": "UX/UI",
+    "status": "em andamento",
+    "children": [
+      {
+        "key": "4-1",
+        "id": "4.1",
+        "name": "Revisão com design lead",
+        "duration": "4,00",
+        "start": "06/08/2024",
+        "end": "06/08/2024",
+        "projeto": "UX/UI",
+        "status": "pendente"
+      }
+    ]
+  },
+  {
+    "key": "5",
+    "id": 5,
+    "name": "Revisão de contratos",
+    "duration": "6,00",
+    "start": "07/08/2024",
+    "end": "07/08/2024",
+    "projeto": "Jurídico",
+    "status": "pendente"
+  }
+]
